@@ -1,34 +1,30 @@
 import java.util.ArrayList;
 import java.util.Iterator;
+import java.util.Random;
 
+//to make the simulation work, a publicly stored color variable will help the map visualization
 import org.fusesource.jansi.Ansi;
+import org.fusesource.jansi.Ansi.Color;
+
 
 public class Person {
 	
+	//size of board, got from Existence
 	private int SIZE;
+	public Ansi.Color color;
 	
-	@SuppressWarnings("unused")
 	private String name;
 	private int userID;
 	private int position;
-	private ArrayList<Item> items;
-	private int numItems;
-	private boolean lostItem;
-	private Ansi.Color color;
+	private ArrayList<Item> items = new ArrayList<>();
+	private ArrayList<Item> lostItems = new ArrayList<>();
 	
-	Person(String str, int id, Ansi.Color c) {
+	Person(String str, Color c) {
 		items = new ArrayList<Item>();
 		name = str;
-		userID = id;
-		numItems = 0;
-		SIZE = Server.getServer().SIZE;
+		SIZE = Existence.getExistence().SIZE;
 		position = (int)(Math.random()*(SIZE*SIZE));
-		lostItem = false;
 		color = c;
-	}
-	
-	public Ansi.Color getColor() {
-		return color;
 	}
 	
 	public int getPosition() {
@@ -39,94 +35,66 @@ public class Person {
 		return userID;
 	}
 	
-	public void addItem(String str) {
-		Item newItem = new Item(str,  position, userID);
-		Server s = Server.getServer();
-		int itemID = s.getNewItemID();
-		newItem.setID(itemID);
-		items.add(newItem);	
-		numItems++;
+	public void registerUser() {
+		//adds the user to the server's list of users as well as get userID
+		this.userID = Server.getServer().registerUser(this);
 	}
 	
-	public void removeItem(String str) {
-		Iterator<Item> it = items.iterator();
-		while (it.hasNext()) {
-			Item i = it.next();
-			if (i.getName() == str && i.getIsLost() == false) {
-				it.remove();
-			}
-		}
+	public void addItem(String name) {
+		Item item = new Item(name, color);
+		items.add(item);	
+		
+		//the item's itemID is added directly by the server
+		//might make more logical sense to have the item given a random ID on creation
+		Server.getServer().registerItem(item);
 	}
 	
 	public void loseItem() {
-		if (!lostItem) {
-			lostItem = true;
-			int random = (int)(Math.random() *numItems);
-			Item item = items.get(random);
-			item.setPosition(position);
-			Server s = Server.getServer();
-			boolean alreadyLost = s.reportLostItem(item, userID);
-			if (!alreadyLost) {
-				item.changeIsLost();
-			}
-		}
+		//gets a random item from the user's items
+		Item item = items.get(new Random().nextInt(items.size()));
+		//item loses itself, sets up flags & position
+		item.loseItem(position);
+		//swap item to lost item list from item list
+		lostItems.add(item);
+		items.remove(item);
+		
+		Server.getServer().reportLostItem(item, userID);
 	}
 	
 	public void recoverLostItem(int id, int pos) {
-		//go find item at position
-		
-		//change item id to found;
-		/*
-		Iterator<Item> it = items.iterator();
-		while (it.hasNext()) {
-			Item i = it.next();
-			if (i.getID() == id) {
-				i.changeIsLost();
-				lostItem = true;
-			}
-		}	
-		*/	
-		
+		//not yet implemented		
 	}
 	
-	
 	public void findItem(int foundID, int pos) {
-		Iterator<Item> it = items.iterator();
+		Iterator<Item> it = lostItems.iterator();
 		//checks to see if found item is owners
 		//in which case, don't need to report it to server
+		//this is just to make it so an owner doesn't immediately find and pick up his own item.
+		//could end up updating this so that there is a short delay before self pick up is possible
 		boolean ownItem = false;
-		while (it.hasNext()) {
+		while (it.hasNext() && ownItem == false) {
 			Item i = it.next();
 			if (i.getID() == foundID) {
 				ownItem = true;
 			}
 		}
 		if (!ownItem) {
-			Server s = Server.getServer();
-			s.reportFoundItem(foundID, pos);
+			Server.getServer().reportFoundItem(foundID, pos);
 		}
 	}
-	
-	public void printPerson() {
-		System.out.println("Name:	" + name + "	ID:	" + userID);
-		Iterator<Item> it = items.iterator();
-		while (it.hasNext()) {
-			it.next().printItem();
-		}
-		System.out.println("----------------------");
-	}
-	
+
 	public void move() {
 		int direction =  (int)(Math.random()*9);		
-		
-		//fix movement at borders
-		if (position%SIZE == 0 && ( direction == 0 || direction == 3 || direction == 6)) {
+		int posX = position%SIZE;
+		int posY = position/SIZE;
+		//fix movement at borders by moving opposite direction from border
+		if (posX == 0 && ( direction == 0 || direction == 3 || direction == 6)) {
 			direction = 5;
-		} else if (-1 < position && position < SIZE && (direction == 0 || direction == 1 || direction == 2)) {
+		} else if (posY == 0 && (direction == 0 || direction == 1 || direction == 2)) {
 			direction = 7;
-		} else if ((SIZE*SIZE - SIZE - 1) < position && position < (SIZE*SIZE) && (direction == 6 || direction == 7 || direction == 8)) {
+		} else if (posY == SIZE - 1 && (direction == 6 || direction == 7 || direction == 8)) {
 			direction = 1;
-		} else if (position%SIZE == (SIZE-1) && ( direction == 2 || direction == 5 || direction == 8)) {
+		} else if (posX == SIZE-1 && ( direction == 2 || direction == 5 || direction == 8)) {
 			direction = 3;
 		}
 		
@@ -138,5 +106,24 @@ public class Person {
 		} else {
 			position = position + SIZE - (7 - direction);
 		}
+	}
+	
+	public void exist() {
+		this.move();
+		if (items.size() > 0) {
+			this.loseItem();
+		}
+		//IMPLEMENT - check notification of a found lost item
+		//IMPLEMENT - change moving strategy to go to item
+	}
+	
+	//debugging purposes - print out person info
+	public void printPerson() {
+		System.out.println("Name:	" + name + "	ID:	" + userID);
+		Iterator<Item> it = items.iterator();
+		while (it.hasNext()) {
+			it.next().printItem();
+		}
+		System.out.println("----------------------");
 	}
 }
