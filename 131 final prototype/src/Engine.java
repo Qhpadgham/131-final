@@ -19,11 +19,17 @@ import org.fusesource.jansi.AnsiConsole;
 public class Engine {
 	
 
+	private static Engine engine = new Engine();
+	private Engine() {}
+	public static Engine getEngine() {
+		return engine;
+	}
+	
 	public static final String ANSI_CLS = "\u001b[2J";
 	
-	static int numOfUsers = 5;
-	static int numOfItems = 1;
-	static int SIZE = 15;
+	static int numOfUsers = 2;
+	static int numOfItems = 2;
+	static int SIZE = 10;
 	static int dropRate = 5;
 	
 	static ArrayList<String> items = new ArrayList<>(Arrays.asList("air freshener","apple","beef","bottle","bottle cap","bow","bowl","bread","bucket","button","camera","carrots","cat","CD","charger","checkbook","cinder block","coasters","conditioner","controller","cookie jar","couch","cup","deodorant","desk","door","drawer","eraser","eye liner","fake flowers","floor","flowers","food","fork","glass","glow stick","grid paper","hair brush","helmet","house","key chain","keyboard","lamp shade","leg warmers","lotion","magnet","mirror","model car","monitor","mop","mouse pad","mp3 player","needle","outlet","paint brush","paper","pen","perfume","phone","photo album","pillow","plastic fork","plate","puddle","purse","radio","remote","ring","rubber duck","rusty nail","scotch tape","screw","seat belt","shirt","sidewalk","sketch pad","slipper","socks","soda can","spoon","stockings","stop sign","sun glasses","teddies","thermostat","thread","tire swing","toe ring","toilet","tooth picks","toothbrush","toothpaste","truck","twister","USB drive","wagon","wallet","white out","window","zipper"));
@@ -42,9 +48,6 @@ public class Engine {
 		//just randomizes the list of names and items
 		Collections.shuffle(names);
 		Collections.shuffle(items);
-		
-		//give existence the size of board variable
-		existence.SIZE = SIZE;
 		
 		//set up users and their items.
 		for (int j = 0; j < numOfUsers; j++) {

@@ -110,7 +110,7 @@ public class Person {
 	
 	public void exist() {
 		this.move();
-		if (items.size() > 0) {
+		if (this.items.size() > 0) {
 			this.loseItem();
 		}
 		//IMPLEMENT - check notification of a found lost item

@@ -8,15 +8,21 @@ import org.fusesource.jansi.Ansi;
 
 public class Existence {
 
+
+	public static int SIZE;
+	private Object[][] board;
+	
 	private static Existence existence = new Existence();
-	private Existence() {}
+	private Existence() {
+		Engine.getEngine();
+		SIZE = Engine.SIZE;
+		board = new Object[SIZE][SIZE];
+	}
 	public static Existence getExistence() {
 		return existence;
 	}
 	
-	int SIZE = 15;
 	
-	private Object[][] board = new Object[SIZE][SIZE];
 	
 
 	public void printBoard() {
@@ -37,7 +43,7 @@ public class Existence {
 		//
 		//  b) secondly, it adds each item that is currently lost to the map so they can be displayed
 		for(Map.Entry<Integer, Integer> entry1 : lostItems.entrySet()) {
-			int lostItemID = entry1.getValue();
+			int lostItemID = entry1.getKey();
 		    Item item = items.get(lostItemID);
 		    for(Map.Entry<Integer, Person> entry2 : users.entrySet()) {
 			    Person p = entry2.getValue();
