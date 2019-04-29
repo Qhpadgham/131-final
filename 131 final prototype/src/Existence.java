@@ -49,7 +49,7 @@ public class Existence {
 			    Person p = entry2.getValue();
 			    boolean personFoundItem = item.isInRange(p.getPosition());
 			    if(personFoundItem) {
-			    	p.findItem(lostItemID, item.getPosition());
+			    	p.reportNearbyItem(lostItemID, item.getPosition());
 			    }	    
 		    }
 		    int pos = item.getPosition();	

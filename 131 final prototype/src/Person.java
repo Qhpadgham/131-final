@@ -18,13 +18,21 @@ public class Person {
 	private int position;
 	private ArrayList<Item> items = new ArrayList<>();
 	private ArrayList<Item> lostItems = new ArrayList<>();
+	private ArrayList<Item> reportedItems = new ArrayList<>();
+	private ArrayList<Item> locatedItems = new ArrayList<>();
+	private Random random = new Random();
+	private Server server;
+	private boolean recoveringItem = false;
+	
 	
 	Person(String str, Color c) {
 		items = new ArrayList<Item>();
 		name = str;
-		SIZE = Existence.getExistence().SIZE;
-		position = (int)(Math.random()*(SIZE*SIZE));
+		Existence.getExistence();
+		SIZE = Existence.SIZE;
+		position = random.nextInt(SIZE*SIZE);
 		color = c;
+		server = Server.getServer();
 	}
 	
 	public int getPosition() {
@@ -37,7 +45,7 @@ public class Person {
 	
 	public void registerUser() {
 		//adds the user to the server's list of users as well as get userID
-		this.userID = Server.getServer().registerUser(this);
+		this.userID = server.registerUser(this);
 	}
 	
 	public void addItem(String name) {
@@ -46,27 +54,43 @@ public class Person {
 		
 		//the item's itemID is added directly by the server
 		//might make more logical sense to have the item given a random ID on creation
-		Server.getServer().registerItem(item);
+		server.registerItem(item);
 	}
 	
-	public void loseItem() {
+	private void loseItem() {
 		//gets a random item from the user's items
-		Item item = items.get(new Random().nextInt(items.size()));
+		Item item = items.get(random.nextInt(items.size()));
 		//item loses itself, sets up flags & position
 		item.loseItem(position);
 		//swap item to lost item list from item list
 		lostItems.add(item);
 		items.remove(item);
-		
-		Server.getServer().reportLostItem(item, userID);
 	}
 	
-	public void recoverLostItem(int id, int pos) {
-		//not yet implemented		
+	private void rememberItem() {
+		for (Iterator<Item> it = lostItems.iterator(); it.hasNext();) {
+			Item rememberedItem = it.next();
+			if (random.nextDouble() > 0.75) {
+				server.reportLostItem(rememberedItem, userID);
+				reportedItems.add(rememberedItem);
+				it.remove();
+			}
+		}
+	}
+
+	//First int is item id, second is position
+	public void update(Integer[] itemData) {
+		for (Iterator<Item> it = reportedItems.iterator(); it.hasNext();) {
+			Item reportedItem = it.next();
+			if (reportedItem.getID() == itemData[0]) {
+				locatedItems.add(reportedItem);
+				it.remove();
+			}
+		}
 	}
 	
-	public void findItem(int foundID, int pos) {
-		Iterator<Item> it = lostItems.iterator();
+	public void reportNearbyItem(int foundID, int pos) {
+		Iterator<Item> it = reportedItems.iterator();
 		//checks to see if found item is owners
 		//in which case, don't need to report it to server
 		//this is just to make it so an owner doesn't immediately find and pick up his own item.
@@ -79,23 +103,46 @@ public class Person {
 			}
 		}
 		if (!ownItem) {
-			Server.getServer().reportFoundItem(foundID, pos);
+			server.reportFoundItem(foundID, pos);
 		}
 	}
+	
+	private void pickUpItem() {
+		Item foundItem = locatedItems.get(0);
+		foundItem.beenReported = false;
+		foundItem.isFound = false;
+		items.add(foundItem);
+		locatedItems.remove(0);
+		server.reportItemRecovered(foundItem.getID());
+	}
 
-	public void move() {
-		int direction =  (int)(Math.random()*9);		
+	private void move() {
 		int posX = position%SIZE;
 		int posY = position/SIZE;
-		//fix movement at borders by moving opposite direction from border
-		if (posX == 0 && ( direction == 0 || direction == 3 || direction == 6)) {
-			direction = 5;
-		} else if (posY == 0 && (direction == 0 || direction == 1 || direction == 2)) {
-			direction = 7;
-		} else if (posY == SIZE - 1 && (direction == 6 || direction == 7 || direction == 8)) {
-			direction = 1;
-		} else if (posX == SIZE-1 && ( direction == 2 || direction == 5 || direction == 8)) {
-			direction = 3;
+		//4 means move nowhere, default
+		int direction = 4;
+		if (recoveringItem == true) {
+			int itemX = locatedItems.get(0).getPosition()%SIZE;
+			int itemY = locatedItems.get(0).getPosition()/SIZE;
+			if (itemX == posX && itemY == posY) {
+				pickUpItem();
+			} else if (Math.abs(posX-itemX) > Math.abs(posY-itemY)) {
+				direction = (posX-itemX > 0) ? 3 : 5;
+			} else {
+				direction = (posY-itemY > 0) ? 1 : 7;
+			}
+		} else {
+			direction =  (int)(Math.random()*9);
+			//fix movement at borders by moving opposite direction from border
+			if (posX == 0 && ( direction == 0 || direction == 3 || direction == 6)) {
+				direction = 5;
+			} else if (posY == 0 && (direction == 0 || direction == 1 || direction == 2)) {
+				direction = 7;
+			} else if (posY == SIZE - 1 && (direction == 6 || direction == 7 || direction == 8)) {
+				direction = 1;
+			} else if (posX == SIZE-1 && ( direction == 2 || direction == 5 || direction == 8)) {
+				direction = 3;
+			}
 		}
 		
 		//change position by correct amount depending on direction
@@ -109,12 +156,16 @@ public class Person {
 	}
 	
 	public void exist() {
-		this.move();
-		if (this.items.size() > 0) {
+		this.rememberItem();
+		if (this.items.size() > 0 && (lostItems.size() + reportedItems.size()) < 1) {
 			this.loseItem();
 		}
-		//IMPLEMENT - check notification of a found lost item
-		//IMPLEMENT - change moving strategy to go to item
+		if (locatedItems.size() > 0) {
+			recoveringItem = true;
+		} else {
+			recoveringItem = false;
+		}
+		this.move();
 	}
 	
 	//debugging purposes - print out person info
@@ -126,4 +177,6 @@ public class Person {
 		}
 		System.out.println("----------------------");
 	}
+
+	
 }

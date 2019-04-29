@@ -1,5 +1,6 @@
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.Iterator;
 import java.util.Map;
 
 
@@ -18,7 +19,7 @@ public class Server {
 	//first integer is itemID, second integer is the owner's ID
 	private HashMap<Integer, Integer> lostItems = new HashMap<>();
 	
-	//list of people to report to about their lost items
+	//list of people to report to about their lost items. First int is item id, second is position
 	private ArrayList<Integer[]> reportList = new ArrayList<>();
 	
 	//used to generate IDs, not actually important otherwise
@@ -51,14 +52,20 @@ public class Server {
 	}
 	
 	public void reportFoundItem(int itemID, int position) {
-		if (lostItems.containsKey(itemID)) {
+		Item reportedItem = items.get(itemID);
+		if (lostItems.containsKey(itemID) && reportedItem.beenReported == false) {
+			items.get(itemID).beenReported = true;
 			//add person to list of people to report found items to
 			Integer[] itemInfo = {lostItems.get(itemID), position};
 			reportList.add(itemInfo);
 			
 			//this line is only needed for visualization to change from . to !, would not be needed in real program
-			items.get(itemID).isFound = true;
+			reportedItem.isFound = true;
 		}
+	}
+	
+	public void reportItemRecovered(int itemID) {
+		lostItems.remove(itemID);
 	}
 	
 	public void printUsers() {
@@ -67,6 +74,15 @@ public class Server {
 		    value.printPerson();
 		    
 		} 
+	}
+	
+	public void updateLosers() {
+		for (Iterator<Integer[]> it = reportList.iterator(); it.hasNext();) {
+			Integer[] itemData = it.next();
+			Person loser = users.get(lostItems.get(itemData[0]));
+			loser.update(itemData);
+			it.remove();
+		}
 	}
 	
 	
@@ -81,7 +97,6 @@ public class Server {
 	
 	public HashMap<Integer, Integer> getLostItems() {
 		return lostItems;
-	}
-	
+	}		
 }
 

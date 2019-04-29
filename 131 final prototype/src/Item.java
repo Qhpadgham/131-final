@@ -9,6 +9,7 @@ public class Item {
 	public Ansi.Color color;
 	//this found variable is to distinguish in the visualization between lost items that have and have not been found by another user yet, would not be needed in real code
 	public boolean isFound;
+	public boolean beenReported;
 	
 	private String name;
 	private int itemID;
@@ -17,8 +18,10 @@ public class Item {
 	
 	public Item(String str, Color c) {
 		name = str;
-		SIZE = Existence.getExistence().SIZE;
+		Existence.getExistence();
+		SIZE = Existence.SIZE;
 		color = c;
+		beenReported = false;
 	}
 	
 	public int getID() {
