@@ -19,6 +19,9 @@ public class Server {
 	//first integer is itemID, second integer is the owner's ID
 	private HashMap<Integer, Integer> lostItems = new HashMap<>();
 	
+	//first integer is itemID, second integer is the owner's ID
+	private HashMap<Integer, Integer> reportedItems = new HashMap<>();
+	
 	//list of people to report to about their lost items. First int is item id, second is position
 	private ArrayList<Integer[]> reportList = new ArrayList<>();
 	
@@ -53,10 +56,11 @@ public class Server {
 	
 	public void reportFoundItem(int itemID, int position) {
 		Item reportedItem = items.get(itemID);
-		if (lostItems.containsKey(itemID) && reportedItem.beenReported == false) {
-			items.get(itemID).beenReported = true;
+		if (lostItems.containsKey(itemID)) {
 			//add person to list of people to report found items to
-			Integer[] itemInfo = {lostItems.get(itemID), position};
+			Integer[] itemInfo = {itemID, position};
+			
+			reportedItems.put(itemID, lostItems.get(itemID));
 			reportList.add(itemInfo);
 			
 			//this line is only needed for visualization to change from . to !, would not be needed in real program
@@ -65,7 +69,19 @@ public class Server {
 	}
 	
 	public void reportItemRecovered(int itemID) {
-		lostItems.remove(itemID);
+		reportedItems.remove(itemID);
+	}
+	
+
+	public void updateLosers() {
+
+		for (Iterator<Integer[]> it = reportList.iterator(); it.hasNext();) {
+			Integer[] itemData = it.next();
+			lostItems.remove(itemData[0]);
+			Person loser = users.get(reportedItems.get(itemData[0]));
+			loser.update(itemData);
+			it.remove();
+		}
 	}
 	
 	public void printUsers() {
@@ -75,16 +91,6 @@ public class Server {
 		    
 		} 
 	}
-	
-	public void updateLosers() {
-		for (Iterator<Integer[]> it = reportList.iterator(); it.hasNext();) {
-			Integer[] itemData = it.next();
-			Person loser = users.get(lostItems.get(itemData[0]));
-			loser.update(itemData);
-			it.remove();
-		}
-	}
-	
 	
 	//these getter functions only exist to make the simulation work, you would not have these in real life
 	public HashMap<Integer, Person> getUsers() {
@@ -97,6 +103,10 @@ public class Server {
 	
 	public HashMap<Integer, Integer> getLostItems() {
 		return lostItems;
-	}		
+	}	
+	
+	public HashMap<Integer, Integer> getReportedItems() {
+		return reportedItems;
+	}	
 }
 

@@ -22,15 +22,13 @@ public class Existence {
 		return existence;
 	}
 	
-	
-	
-
 	public void printBoard() {
 		
 		//Existence IRL doesn't need to get this information, but this simulation of existence does unfortunately.
 		HashMap<Integer, Person> users = Server.getServer().getUsers();
 		HashMap<Integer, Item> items = Server.getServer().getItems();
-		HashMap<Integer, Integer> lostItems = Server.getServer().getLostItems();
+		HashMap<Integer, Integer> lostItems = Server.getServer().getLostItems();;
+		HashMap<Integer, Integer> reportedItems = Server.getServer().getReportedItems();
 		
 		//this resets the board to be populated again for the next update
 		for (int k = 0; k < SIZE; k++) {
@@ -57,6 +55,17 @@ public class Existence {
 		    int y = pos%SIZE;
 		    board[x][y] = item;
 		}
+		
+		//Similar to the 2nd part above, this is adding every reported item to the map so they can be displayed
+		for(Map.Entry<Integer, Integer> entry1 : reportedItems.entrySet()) {
+			int reportedItemID = entry1.getKey();
+		    Item item = items.get(reportedItemID);
+		    int pos = item.getPosition();	
+		    int x = pos/SIZE;
+		    int y = pos%SIZE;
+		    board[x][y] = item;
+		}
+		
 		
 		//Similar to the 2nd part above, this is adding every user to the map so they can be displayed.
 		for(Map.Entry<Integer, Person> entry : users.entrySet()) {

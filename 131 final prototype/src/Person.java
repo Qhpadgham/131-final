@@ -67,10 +67,10 @@ public class Person {
 		items.remove(item);
 	}
 	
-	private void rememberItem() {
+	private void reportItem() {
 		for (Iterator<Item> it = lostItems.iterator(); it.hasNext();) {
 			Item rememberedItem = it.next();
-			if (random.nextDouble() > 0.75) {
+			if (random.nextDouble() > 0.9) {
 				server.reportLostItem(rememberedItem, userID);
 				reportedItems.add(rememberedItem);
 				it.remove();
@@ -109,7 +109,6 @@ public class Person {
 	
 	private void pickUpItem() {
 		Item foundItem = locatedItems.get(0);
-		foundItem.beenReported = false;
 		foundItem.isFound = false;
 		items.add(foundItem);
 		locatedItems.remove(0);
@@ -156,8 +155,8 @@ public class Person {
 	}
 	
 	public void exist() {
-		this.rememberItem();
-		if (this.items.size() > 0 && (lostItems.size() + reportedItems.size()) < 1) {
+		this.reportItem();
+		if (this.items.size() > 0 && (lostItems.size() + reportedItems.size() + locatedItems.size()) < 1) {
 			this.loseItem();
 		}
 		if (locatedItems.size() > 0) {
