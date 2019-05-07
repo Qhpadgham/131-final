@@ -13,6 +13,10 @@ public class Person {
 	private int SIZE;
 	public Ansi.Color color;
 	
+	// instances for movement strategy to not keep remaking them over and over
+	public static MovementStrategy movementRandom = new MoveRandomly();
+	public static MovementStrategy movementToItem = new MoveToItem();
+	
 	private String name;
 	private int userID;
 	private int position;
@@ -22,7 +26,8 @@ public class Person {
 	private ArrayList<Item> locatedItems = new ArrayList<>();
 	private Random random = new Random();
 	private Server server;
-	private boolean recoveringItem = false;
+	private MovementStrategy movement;
+	private int destination;
 	
 	
 	Person(String str, Color c) {
@@ -33,6 +38,8 @@ public class Person {
 		position = random.nextInt(SIZE*SIZE);
 		color = c;
 		server = Server.getServer();
+		movement = new MoveRandomly();
+		destination = 0;
 	}
 	
 	public int getPosition() {
@@ -115,44 +122,7 @@ public class Person {
 		server.reportItemRecovered(foundItem.getID());
 	}
 
-	private void move() {
-		int posX = position%SIZE;
-		int posY = position/SIZE;
-		//4 means move nowhere, default
-		int direction = 4;
-		if (recoveringItem == true) {
-			int itemX = locatedItems.get(0).getPosition()%SIZE;
-			int itemY = locatedItems.get(0).getPosition()/SIZE;
-			if (itemX == posX && itemY == posY) {
-				pickUpItem();
-			} else if (Math.abs(posX-itemX) > Math.abs(posY-itemY)) {
-				direction = (posX-itemX > 0) ? 3 : 5;
-			} else {
-				direction = (posY-itemY > 0) ? 1 : 7;
-			}
-		} else {
-			direction =  (int)(Math.random()*9);
-			//fix movement at borders by moving opposite direction from border
-			if (posX == 0 && ( direction == 0 || direction == 3 || direction == 6)) {
-				direction = 5;
-			} else if (posY == 0 && (direction == 0 || direction == 1 || direction == 2)) {
-				direction = 7;
-			} else if (posY == SIZE - 1 && (direction == 6 || direction == 7 || direction == 8)) {
-				direction = 1;
-			} else if (posX == SIZE-1 && ( direction == 2 || direction == 5 || direction == 8)) {
-				direction = 3;
-			}
-		}
-		
-		//change position by correct amount depending on direction
-		if (-1 < direction && direction < 3) {
-			position = position - SIZE - (1-direction);
-		} else if ( 2 < direction && direction < 6) {
-			position = position - (4-direction);
-		} else {
-			position = position + SIZE - (7 - direction);
-		}
-	}
+
 	
 	public void exist() {
 		this.reportItem();
@@ -160,11 +130,17 @@ public class Person {
 			this.loseItem();
 		}
 		if (locatedItems.size() > 0) {
-			recoveringItem = true;
-		} else {
-			recoveringItem = false;
+			if (destination == position) {
+				pickUpItem();
+				destination = 0;
+				movement = movementRandom;
+			} else if (destination == 0) {
+				destination = locatedItems.get(0).getPosition();
+				movement = movementToItem;
+				
+			}
 		}
-		this.move();
+		position = this.movement.move(position, SIZE, destination);
 	}
 	
 	//debugging purposes - print out person info
@@ -176,6 +152,63 @@ public class Person {
 		}
 		System.out.println("----------------------");
 	}
-
-	
 }
+
+interface MovementStrategy {
+	int move(int position, int SIZE, int destination);
+}
+
+class MoveRandomly implements MovementStrategy {
+
+	public int move(int position, int SIZE, int destination) {
+
+		int posX = position%SIZE;
+		int posY = position/SIZE;
+		int direction =  (int)(Math.random()*9);
+		//fix movement at borders by moving opposite direction from border
+		if (posX == 0 && ( direction == 0 || direction == 3 || direction == 6)) {
+			direction = 5;
+		} else if (posY == 0 && (direction == 0 || direction == 1 || direction == 2)) {
+			direction = 7;
+		} else if (posY == SIZE - 1 && (direction == 6 || direction == 7 || direction == 8)) {
+			direction = 1;
+		} else if (posX == SIZE-1 && ( direction == 2 || direction == 5 || direction == 8)) {
+			direction = 3;
+		}
+		
+		if (-1 < direction && direction < 3) {
+			position = position - SIZE - (1-direction);
+		} else if ( 2 < direction && direction < 6) {
+			position = position - (4-direction);
+		} else {
+			position = position + SIZE - (7 - direction);
+		}
+		return position;
+	}
+}
+	
+class MoveToItem implements MovementStrategy {
+
+	public int move(int position, int SIZE, int destination) {
+		int posX = position%SIZE;
+		int posY = position/SIZE;
+		int itemX = destination%SIZE;
+		int itemY = destination/SIZE;
+		int direction;
+		if (Math.abs(posX-itemX) > Math.abs(posY-itemY)) {
+			direction = (posX-itemX > 0) ? 3 : 5;
+		} else {
+			direction = (posY-itemY > 0) ? 1 : 7;
+		}
+		if (-1 < direction && direction < 3) {
+			position = position - SIZE - (1-direction);
+		} else if ( 2 < direction && direction < 6) {
+			position = position - (4-direction);
+		} else {
+			position = position + SIZE - (7 - direction);
+		}
+		return position;
+	}
+}
+
+

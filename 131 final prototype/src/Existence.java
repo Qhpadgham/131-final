@@ -13,8 +13,8 @@ public class Existence {
 	private Object[][] board;
 	
 	private static Existence existence = new Existence();
+	
 	private Existence() {
-		Engine.getEngine();
 		SIZE = Engine.SIZE;
 		board = new Object[SIZE][SIZE];
 	}

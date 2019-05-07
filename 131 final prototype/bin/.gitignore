@@ -2,3 +2,6 @@
 /Existence.class
 /TestingIt.class
 /Engine.class
+/MoveRandomly.class
+/MoveToItem.class
+/MovementStrategy.class
